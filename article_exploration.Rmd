@@ -1,0 +1,92 @@
+---
+title: "Exploratory Analysis"
+output:
+  html_document:
+    df_print: paged
+---
+
+Exploratory analysis before fitting regression models
+
+
+# Process Data
+```{r processing, message=FALSE}
+library(dplyr);
+library(rlang);
+
+delays <- read.csv('data/delays.csv');
+
+# add timestamp
+delays <- delays %>% 
+    mutate(
+        timestamp = as.POSIXct(
+            paste(Date, Time), 
+            format = '%Y/%m/%d %H:%M'
+            )
+        );
+```
+
+
+Let's get a summary of each delay code. 
+
+```{r codes}
+delay.summary <- delays %>% 
+    group_by(Code) %>%
+    summarize(
+        count = n(), 
+        mean.delay = mean(Min.Delay), 
+        min.delay = min(Min.Delay),
+        median.delay = median(Min.Delay),
+        max.delay = max(Min.Delay)
+        ) %>%
+    ungroup() %>%
+    filter(max.delay > 0) %>%
+    arrange(-count);
+```
+
+Plot the histogram of all delays.
+
+```{r histograms}
+group.histogram <- function(input.data, filter.column = NULL, value = NULL) {
+
+    if( !is.null(filter.column) ) {
+       group.data <- input.data %>%
+           filter( !!sym(filter.column) == value); 
+    } else {
+        group.data <- input.data;
+    }
+    
+    graphics::hist(
+        group.data$Min.Delay, 
+        main = value,
+        xlab = 'Delay (minutes)',
+        ylab = 'Freq',
+        col = 'steelblue',
+        xaxs = 'i',
+        yaxs = 'i'
+        );
+}
+
+group.histogram(delays);
+```
+
+There are some extreme delays that make the histogram impossible to work with. Let's have a look.
+
+```{r}
+delays %>% filter(Min.Delay >= 100);
+```
+
+The histogram is more legible if we restrict it to delays under an hour.
+
+```{r}
+group.histogram(delays %>% filter(Min.Delay < 60) );
+```
+
+Now we can break it down by code.
+```{r, fig.width=9, fig.height=7}
+short.delays <- delays %>% filter(Min.Delay < 60);
+
+par(mfrow = c(3, 4));
+for( code in delay.summary$Code[1:12] ) group.histogram(short.delays, 'Code', code);
+```
+
+
