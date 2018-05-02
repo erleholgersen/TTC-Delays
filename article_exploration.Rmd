@@ -89,4 +89,23 @@ par(mfrow = c(3, 4));
 for( code in delay.summary$Code[1:12] ) group.histogram(short.delays, 'Code', code);
 ```
 
+Or station
+```{r, fig.width=9, fig.height=7}
+delay.summary <- delays %>% 
+    group_by(Station) %>%
+    summarize(
+        count = n(), 
+        mean.delay = mean(Min.Delay), 
+        min.delay = min(Min.Delay),
+        median.delay = median(Min.Delay),
+        max.delay = max(Min.Delay)
+        ) %>%
+    ungroup() %>%
+    filter(max.delay > 0) %>%
+    arrange(-count);
 
+par(mfrow = c(3, 4));
+for( station in delay.summary$Station[1:12] ) group.histogram(short.delays, 'Station', station);
+```
+
+Interistingly, there are no clear differences in distribution between the station. By contrast, there are clear differences by type of delay.
